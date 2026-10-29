@@ -37,23 +37,26 @@ export class RpcCircuitBreakerManager {
 
   public getActiveEndpoint(now: number = Date.now()): string {
     for (let i = 0; i < this.endpoints.length; i++) {
-      const idx = (this.currentIndex + i) % this.endpoints.length;
-      const ep = this.endpoints[idx];
+      const ep = this.endpoints[i];
+      if (!ep) continue;
 
       // Check if cooldown period elapsed
-      if (!ep.isHealthy && now - ep.lastFailureTime > this.config.cooldownPeriodMs) {
+      if (
+        !ep.isHealthy &&
+        now - ep.lastFailureTime > this.config.cooldownPeriodMs
+      ) {
         ep.isHealthy = true;
         ep.failureCount = 0;
       }
 
       if (ep.isHealthy) {
-        this.currentIndex = idx;
+        this.currentIndex = i;
         return ep.url;
       }
     }
 
     // If all unhealthy, fallback to first endpoint
-    return this.endpoints[0].url;
+    return this.endpoints[0]?.url ?? "";
   }
 
   public recordSuccess(url: string): void {
